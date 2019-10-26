@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: root
+    password: 123456
+    url: jdbc:mysql://121.36.144.204:3306/mcs?useUnicode=true&characterEncoding=utf-8&useSSL=true&serverTimezone=GMT%2B8
+    driver-class-name: com.mysql.jdbc.Driver
+  jackson:
+    serialization:
+      write-dates-as-timestamps: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  type-aliases-package: com.mcs.entity
+
+#pagehelper分页插件配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+
+#showSql
+logging:
+  level:
+    com:
+      example:
+        mapper : debug

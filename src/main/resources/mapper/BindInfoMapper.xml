@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.mcs.dao.BindInfoDao">
+    <resultMap id="BaseResultMap" type="com.mcs.entity.BindInfo">
+        <id column="id" property="id" />
+        <result column="car_no" property="carNo"/>
+        <result column="mobile_phone" property="mobilePhone"/>
+        <result column="secret_phone" property="secretPhone"/>
+        <result column="status" property="status"/>
+        <result column="bind_date" property="bindDate"/>
+        <result column="create_date" property="createDate"/>
+        <result column="modified_date" property="modifiedDate"/>
+
+    </resultMap>
+    <sql id="baseColumn">
+        car_no,mobile_phone,secret_phone,status,bind_date,create_date,modified_date
+    </sql>
+    <sql id="baseValue">
+        #{carNo},
+        #{mobilePhone},
+        #{secretPhone},
+        #{status},
+        #{bindDate},
+        now(),
+        now()
+    </sql>
+
+    <insert id="insertBindInfo" parameterType="com.mcs.entity.BindInfo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `bind_info`
+        (<include refid="baseColumn"/>)
+        VALUES
+        (<include refid="baseValue"/>)
+    </insert>
+    <select id="getBindInfo" resultMap="BaseResultMap">
+        select <include refid="baseColumn"/>
+        from `bind_info`
+        where
+        car_no = #{carNo}
+    </select>
+    <select id="getAllTimeOutBindInfo" resultMap="BaseResultMap">
+        select id,<include refid="baseColumn"/>
+        from `bind_info`
+        where
+        bind_date  <![CDATA[ < ]]> #{bindDate}
+    </select>
+    <delete id="deleteBindInfo" parameterType="string">
+        delete
+        FROM `bind_info`
+        where
+        bind_date  <![CDATA[ < ]]> #{bindDate}
+
+    </delete>
+
+</mapper>

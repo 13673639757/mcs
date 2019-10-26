@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.mcs.dao.CarLinkDao">
+    <resultMap id="BaseResultMap" type="com.mcs.entity.CarLink">
+        <id column="id" property="id" />
+        <result column="car_no" property="carNo"/>
+        <result column="mobile_phone" property="mobilePhone"/>
+        <result column="status" property="status"/>
+        <result column="create_date" property="createDate"/>
+        <result column="modified_date" property="modifiedDate"/>
+
+    </resultMap>
+    <sql id="baseColumn">
+        car_no,mobile_phone,status,create_date,modified_date
+    </sql>
+    <sql id="baseValue">
+        #{carNo},
+        #{mobilePhone},
+        #{status},
+        now(),
+        now()
+    </sql>
+
+    <insert id="insertCarLink" parameterType="com.mcs.entity.CarLink" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `car_link`
+        (<include refid="baseColumn"/>)
+        VALUES
+        (<include refid="baseValue"/>)
+    </insert>
+    <select id="getCatLinkInfo" resultMap="BaseResultMap">
+        select <include refid="baseColumn"/>
+        from `car_link`
+        where 1=1
+        <if test=" carNo !=null ">
+            and car_no = #{carNo}
+        </if>
+        <if test=" mobilePhone !=null ">
+            and mobile_phone = #{mobilePhone}
+        </if>
+    </select>
+    <select id="deleteCarLink" parameterType="string">
+        delete
+        FROM `car_link`
+        WHERE  1=1
+        <if test=" carNo !=null  ">
+            and car_no = #{carNo}
+        </if>
+        <if test=" mobilePhone !=null ">
+            and mobile_phone = #{mobilePhone}
+        </if>
+    </select>
+
+</mapper>
