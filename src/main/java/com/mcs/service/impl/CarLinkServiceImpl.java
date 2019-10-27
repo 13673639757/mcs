@@ -1,6 +1,7 @@
 package com.mcs.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.mcs.controller.CarLinkController;
 import com.mcs.dao.BindInfoDao;
 import com.mcs.dao.CarLinkDao;
 import com.mcs.dao.SecretPhoneDao;
@@ -12,6 +13,8 @@ import com.mcs.service.AxService;
 import com.mcs.service.CarLinkService;
 import com.mcs.utils.Result;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,7 @@ import java.util.List;
  */
 @Service("carLinkService")
 public class CarLinkServiceImpl implements CarLinkService {
+    private static final Logger log = LoggerFactory.getLogger(CarLinkServiceImpl.class);
     @Resource
     private CarLinkDao carLinkDao;
     @Resource
@@ -36,6 +40,7 @@ public class CarLinkServiceImpl implements CarLinkService {
     private SecretPhoneDao secretPhoneDao;
     @Resource
     private AxService axService;
+
     /**
      * 绑定手机
      *
@@ -44,18 +49,18 @@ public class CarLinkServiceImpl implements CarLinkService {
      */
     @Override
     public Result<Boolean> bind(CarLink carLink) {
-        Result<Boolean>result=Result.createFailResult();
-        if (carLinkDao.getCatLinkInfo(carLink.getCarNo(),null)!=null ){
+        Result<Boolean> result = Result.createFailResult();
+        if (carLinkDao.getCatLinkInfo(carLink.getCarNo(), null) != null) {
             result.setMsg("绑定失败:该车牌号已绑定过手机号！");
             return result;
         }
-        if (carLinkDao.getCatLinkInfo(null,carLink.getMobilePhone())!=null ){
+        if (carLinkDao.getCatLinkInfo(null, carLink.getMobilePhone()) != null) {
             result.setMsg("绑定失败:该手机号已被使用！");
             return result;
         }
         carLink.setStatus(StatusEnum.ENABLE.getCode());
-        Integer flag=carLinkDao.insertCarLink(carLink);
-        if (flag==0){
+        Integer flag = carLinkDao.insertCarLink(carLink);
+        if (flag == 0) {
             return result;
         }
         result.value(true);
@@ -70,8 +75,8 @@ public class CarLinkServiceImpl implements CarLinkService {
      */
     @Override
     public Result<Boolean> unite(CarLink carLink) {
-        Result<Boolean>result=Result.createFailResult();
-        if (carLinkDao.getCatLinkInfo(carLink.getCarNo(),carLink.getMobilePhone())==null ){
+        Result<Boolean> result = Result.createFailResult();
+        if (carLinkDao.getCatLinkInfo(carLink.getCarNo(), carLink.getMobilePhone()) == null) {
             result.setMsg("解绑失败:查不到该车牌对应该手机号的绑定记录！");
             return result;
         }
@@ -88,34 +93,34 @@ public class CarLinkServiceImpl implements CarLinkService {
      */
     @Override
     public synchronized Result<CarLink> getCatLinkInfo(String carNo) {
-        Result<CarLink>result=Result.createFailResult();
-        CarLink carLink=carLinkDao.getCatLinkInfo(carNo,null);
-        if (carLink==null){
+        Result<CarLink> result = Result.createFailResult();
+        CarLink carLink = carLinkDao.getCatLinkInfo(carNo, null);
+        if (carLink == null) {
             result.setMsg("该车牌暂未绑定");
             return result;
         }
-        BindInfo bindInfo=bindInfoDao.getBindInfo(carNo);
-        if (bindInfo!=null){
+        BindInfo bindInfo = bindInfoDao.getBindInfo(carNo);
+        if (bindInfo != null) {
             carLink.setEncMobilePhone(bindInfo.getSecretPhone());
-        }else {
-            List<SecretPhone>list=secretPhoneDao.getAllPhone();
-            if (CollectionUtils.isEmpty(list)){
+        } else {
+            List<SecretPhone> list = secretPhoneDao.getAllPhone();
+            if (CollectionUtils.isEmpty(list)) {
                 result.setMsg("暂无可用隐私号，请稍后再试");
                 return result;
             }
             Collections.shuffle(list);
-            String res=axService.axBindNumber(carLink.getMobilePhone(),list.get(0).getPhoneNumber(),"0");
-            JSONObject json=JSONObject.parseObject(res);
-            if (!json.getString("resultcode").equals("0")){
+            String res = axService.axBindNumber(carLink.getMobilePhone(), list.get(0).getPhoneNumber(), "0");
+            JSONObject json = JSONObject.parseObject(res);
+            if (!json.getString("resultcode").equals("0")) {
                 result.setMsg(json.getString("resultdesc"));
                 return result;
             }
-            BindInfo bindInfo1=new BindInfo();
+            BindInfo bindInfo1 = new BindInfo();
             bindInfo1.setCarNo(carLink.getCarNo());
             bindInfo1.setMobilePhone(carLink.getMobilePhone());
             bindInfo1.setSecretPhone(list.get(0).getPhoneNumber());
             bindInfo1.setStatus(StatusEnum.ENABLE.getCode());
-            bindInfo1.setBindDate(String.format("%010d", System.currentTimeMillis()/1000));
+            bindInfo1.setBindDate(String.format("%010d", System.currentTimeMillis() / 1000));
             carLink.setEncMobilePhone(list.get(0).getPhoneNumber());
             bindInfoDao.insertBindInfo(bindInfo1);
         }
@@ -124,12 +129,20 @@ public class CarLinkServiceImpl implements CarLinkService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void axUnbindNumber() {
-        String bindDate=String.format("%010d", (System.currentTimeMillis()-600000)/1000);
-        List<BindInfo>bindInfoList=bindInfoDao.getAllTimeOutBindInfo(bindDate);
-        if (CollectionUtils.isNotEmpty(bindInfoList)){
-
+        String bindDate = String.format("%010d", (System.currentTimeMillis() - 600000) / 1000);
+        List<BindInfo> bindInfoList = bindInfoDao.getAllTimeOutBindInfo(bindDate);
+        if (CollectionUtils.isNotEmpty(bindInfoList)) {
+            for (BindInfo bindInfo : bindInfoList) {
+                String res = axService.axUnbindNumber(null, bindInfo.getMobilePhone(), bindInfo.getSecretPhone());
+                JSONObject json = JSONObject.parseObject(res);
+                if (json.getString("resultcode").equals("0")) {
+                    bindInfoDao.deleteBindInfo(Long.toString(bindInfo.getId()));
+                    log.info("【解绑"+bindInfo.getMobilePhone()+"成功】");
+                } else {
+                    log.error("【"+bindInfo.getMobilePhone()+"解绑失败;message="+json.getString("resultdesc")+"】");
+                }
+            }
         }
     }
 }

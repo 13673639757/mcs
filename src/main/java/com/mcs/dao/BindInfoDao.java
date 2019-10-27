@@ -13,7 +13,7 @@ public interface BindInfoDao {
 
     Integer insertBindInfo(BindInfo bindInfo);
 
-    void deleteBindInfo(String bindDate);
+    void deleteBindInfo(String id);
 
     BindInfo getBindInfo(String cardNo);
 

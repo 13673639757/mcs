@@ -38,7 +38,7 @@ public class AXDemo {
         // ax.axSetCalleeNumber(null, "+8618612345678", "+8617010000001", "+8618612345679");
 
         // 第六步: 隐私号码循环使用,商户可将绑定关系解绑,即调用AX模式解绑接口
-         ax.axUnbindNumber(null, "+8617858848171", "+8617072855441");
+         ax.axUnbindNumber(null, "17858848171", "17072855441");
 
         // 第七步: 商户可查询已订购的隐私号码的绑定信息,即调用AX模式绑定信息查询接口
         //ax.axQueryBindRelation(null, "+8618612345678");

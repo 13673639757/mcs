@@ -32,7 +32,7 @@
         (<include refid="baseValue"/>)
     </insert>
     <select id="getBindInfo" resultMap="BaseResultMap">
-        select <include refid="baseColumn"/>
+        select id,<include refid="baseColumn"/>
         from `bind_info`
         where
         car_no = #{carNo}
@@ -47,7 +47,7 @@
         delete
         FROM `bind_info`
         where
-        bind_date  <![CDATA[ < ]]> #{bindDate}
+        id=#{id}
 
     </delete>
 
